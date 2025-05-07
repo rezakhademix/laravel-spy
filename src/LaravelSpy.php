@@ -14,12 +14,15 @@ class LaravelSpy
     {
         Http::globalMiddleware(static function (callable $handler): callable {
             return static function (RequestInterface $request, array $options) use ($handler) {
+                if (! config('spy.enabled')) {
+                    return $handler($request, $options);
+                }
+
                 $httpLog = null;
-                info($request->getUri());
-                if (! Str::contains($request->getUri(), config('spy.exclude_urls'))) {
+                if (! Str::contains((string) $request->getUri(), config('spy.exclude_urls'))) {
                     $body = self::parseContent($request->getBody(), $request->getHeaderLine('Content-Type'));
                     $httpLog = HttpLog::create([
-                        'url' => self::obfuscate($request->getUri(), config('spy.obfuscates')),
+                        'url' => self::obfuscate((string) $request->getUri(), config('spy.obfuscates')),
                         'method' => $request->getMethod(),
                         'request_headers' => self::obfuscate($request->getHeaders(), config('spy.obfuscates')),
                         'request_body' => self::obfuscate($body, config('spy.obfuscates')),
@@ -58,9 +61,9 @@ class LaravelSpy
     public static function parseContent($content, $contentType)
     {
         $content = (string) $content;
-        $data = empty($contnet) ? null : [$content];
+        $data = empty($content) ? null : [$content];
 
-        if (strpos($contentType, 'application/json') !== false) {
+        if (strpos($contentType, 'application/json') !== false || json_decode($content, true) != null) {
             $data = json_decode($content, true);
         } elseif (strpos($contentType, 'text/xml') !== false) {
             $data = json_decode(json_encode(simplexml_load_string($content), true));
@@ -68,8 +71,6 @@ class LaravelSpy
             $data = explode("\n", $content);
         } elseif (strpos($contentType, 'application/x-www-form-urlencoded') !== false) {
             parse_str($content, $data);
-        } elseif (json_decode($content, true) != null) {
-            $data = json_decode($content, true);
         }
 
         return $data;
