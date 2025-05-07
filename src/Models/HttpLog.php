@@ -31,11 +31,11 @@ class HttpLog extends Model
     public function __construct(array $attributes = [])
     {
         if (! isset($this->connection)) {
-            $this->setConnection(config('activitylog.database_connection'));
+            $this->setConnection(config('spy.database_connection'));
         }
 
         if (! isset($this->table)) {
-            $this->setTable(config('activitylog.table_name'));
+            $this->setTable(config('spy.table_name'));
         }
 
         parent::__construct($attributes);
