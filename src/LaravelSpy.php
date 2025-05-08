@@ -10,7 +10,7 @@ use Psr\Http\Message\ResponseInterface;
 
 class LaravelSpy
 {
-    public static function boot()
+    public static function boot(): void
     {
         Http::globalMiddleware(static function (callable $handler): callable {
             return static function (RequestInterface $request, array $options) use ($handler) {
@@ -18,78 +18,103 @@ class LaravelSpy
                     return $handler($request, $options);
                 }
 
-                $httpLog = null;
-                if (! Str::contains((string) $request->getUri(), config('spy.exclude_urls'))) {
-                    $body = self::parseContent($request->getBody(), $request->getHeaderLine('Content-Type'));
-                    $httpLog = HttpLog::create([
-                        'url' => self::obfuscate((string) $request->getUri(), config('spy.obfuscates')),
-                        'method' => $request->getMethod(),
-                        'request_headers' => self::obfuscate($request->getHeaders(), config('spy.obfuscates')),
-                        'request_body' => self::obfuscate($body, config('spy.obfuscates')),
-                    ]);
-                }
+                $httpLog = self::shouldLog($request) ? self::handleRequest($request) : null;
 
                 $responsePromise = $handler($request, $options);
 
                 return $responsePromise->then(
-                    function (ResponseInterface $response) use ($httpLog) {
-                        if ($httpLog) {
-                            $httpLog->update([
-                                'status' => $response->getStatusCode(),
-                                'response_body' => self::parseContent($response->getBody(), $response->getHeaderLine('Content-Type')),
-                                'response_headers' => $response->getHeaders(),
-                            ]);
-                        }
-
-                        return $response;
-                    },
-                    function (\Exception $exception) use ($httpLog) {
-                        if ($httpLog) {
-                            $httpLog->update([
-                                'status' => 0,
-                                'response_body' => self::parseContent($exception->getMessage(), 'text/plain'),
-                            ]);
-                        }
-
-                        throw $exception;
-                    }
+                    fn(ResponseInterface $response) => self::handleResponse($response, $httpLog),
+                    fn(\Exception $e) => self::handleException($e, $httpLog)
                 );
             };
         });
     }
 
-    public static function parseContent($content, $contentType)
+    protected static function shouldLog(RequestInterface $request): bool
     {
-        $content = (string) $content;
-        $data = empty($content) ? null : [$content];
-
-        if (strpos($contentType, 'application/json') !== false || json_decode($content, true) != null) {
-            $data = json_decode($content, true);
-        } elseif (strpos($contentType, 'text/xml') !== false) {
-            $data = json_decode(json_encode(simplexml_load_string($content), true));
-        } elseif (strpos($contentType, 'text/plain') !== false) {
-            $data = explode("\n", $content);
-        } elseif (strpos($contentType, 'application/x-www-form-urlencoded') !== false) {
-            parse_str($content, $data);
-        }
-
-        return $data;
+        return !Str::contains((string) $request->getUri(), config('spy.exclude_urls', []));
     }
 
-    public static function obfuscate($data, $search, $replace = '🫣')
+    protected static function handleRequest(RequestInterface $request): ?HttpLog
+    {
+        $body = self::parseContent($request->getBody(), $request->getHeaderLine('Content-Type'));
+
+        return HttpLog::create([
+            'url' => self::obfuscate((string) $request->getUri(), config('spy.obfuscates', [])),
+            'method' => $request->getMethod(),
+            'request_headers' => self::obfuscate($request->getHeaders(), config('spy.obfuscates', [])),
+            'request_body' => self::obfuscate($body, config('spy.obfuscates', [])),
+        ]);
+    }
+
+    protected static function handleResponse(ResponseInterface $response, ?HttpLog $httpLog): ResponseInterface
+    {
+        if ($httpLog) {
+            $httpLog->update([
+                'status' => $response->getStatusCode(),
+                'response_body' => self::parseContent($response->getBody(), $response->getHeaderLine('Content-Type')),
+                'response_headers' => $response->getHeaders(),
+            ]);
+        }
+
+        return $response;
+    }
+
+    protected static function handleException(\Exception $exception, ?HttpLog $httpLog): void
+    {
+        if ($httpLog) {
+            $httpLog->update([
+                'status' => 0,
+                'response_body' => self::parseContent($exception->getMessage(), 'text/plain'),
+            ]);
+        }
+
+        throw $exception;
+    }
+
+    public static function parseContent($content, string $contentType): mixed
+    {
+        $content = (string) $content;
+
+        if (empty($content)) {
+            return null;
+        }
+
+        if (str_contains($contentType, 'application/json') || json_decode($content, true) !== null) {
+            return json_decode($content, true);
+        }
+
+        if (str_contains($contentType, 'text/xml')) {
+            return json_decode(json_encode(simplexml_load_string($content)), true);
+        }
+
+        if (str_contains($contentType, 'text/plain')) {
+            return explode("\n", $content);
+        }
+
+        if (str_contains($contentType, 'application/x-www-form-urlencoded')) {
+            parse_str($content, $data);
+            return $data;
+        }
+
+        return $content;
+    }
+
+    public static function obfuscate(mixed $data, array $keys, string $mask = '🫣'): mixed
     {
         if (is_array($data)) {
-            foreach ($data as $key => $value) {
-                if (in_array($key, $search)) {
-                    $data[$key] = $replace;
+            foreach ($data as $k => &$v) {
+                if (is_array($v)) {
+                    $v = self::obfuscate($v, $keys, $mask);
+                } elseif (in_array($k, $keys, true)) {
+                    $v = $mask;
                 }
             }
         } elseif (is_string($data)) {
-            $data = str_replace($search, $replace, $data);
+            $data = str_replace($keys, $mask, $data);
         } elseif ($data instanceof \GuzzleHttp\Psr7\Uri) {
-            parse_str($data->getQuery(), $queryParams);
-            $query = urldecode(http_build_query(self::obfuscate($queryParams, $search, $replace)));
-
+            parse_str($data->getQuery(), $query);
+            $query = urldecode(http_build_query(self::obfuscate($query, $keys, $mask)));
             return str_replace($data->getQuery(), $query, (string) $data);
         }
 
