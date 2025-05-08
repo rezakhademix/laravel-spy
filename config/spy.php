@@ -2,7 +2,7 @@
 
 return [
     'table_name' => 'http_logs',
-    
+
     'enabled' => env('SPY_ENABLED', true),
     'db_connection' => env('SPY_DB_CONNECTION'),
 
