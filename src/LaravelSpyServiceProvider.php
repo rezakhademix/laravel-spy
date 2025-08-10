@@ -2,6 +2,7 @@
 
 namespace Farayaz\LaravelSpy;
 
+use Farayaz\LaravelSpy\Commands\CleanCommand;
 use Illuminate\Support\ServiceProvider;
 
 class LaravelSpyServiceProvider extends ServiceProvider
@@ -25,6 +26,10 @@ class LaravelSpyServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__ . '/../database/migrations/' . $migrationName . '.stub' => $targetPath,
             ], 'migrations');
+
+            $this->commands([
+                CleanCommand::class,
+            ]);
         }
     }
 
