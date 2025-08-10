@@ -75,6 +75,33 @@ Route::get("/spy", function () {
 ```
 Now head to the `http_logs` table to view the logged parameters.
 
+## Cleaning up logs
+
+Laravel Spy provides a `spy:clean` command to remove old HTTP logs:
+
+```bash
+# Clean logs based on your config
+php artisan spy:clean
+
+# Clean logs older than 30 days
+php artisan spy:clean --days=30
+
+# Clean logs matching URL pattern
+php artisan spy:clean --days=1 --url=api/users
+```
+
+### Automated cleanup
+
+You can schedule automatic cleanup in your Laravel scheduler:
+
+```php
+// app/Console/Kernel.php
+protected function schedule(Schedule $schedule)
+{
+  $schedule->command('spy:clean')->daily();
+}
+```
+
 ## Contributing
 Contributions are welcome! To contribute to Laravel Spy:
 * Fork the repository on GitHub.
