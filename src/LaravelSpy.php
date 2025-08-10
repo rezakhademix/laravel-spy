@@ -23,8 +23,8 @@ class LaravelSpy
                 $responsePromise = $handler($request, $options);
 
                 return $responsePromise->then(
-                    fn(ResponseInterface $response) => self::handleResponse($response, $httpLog),
-                    fn(\Exception $e) => self::handleException($e, $httpLog)
+                    fn (ResponseInterface $response) => self::handleResponse($response, $httpLog),
+                    fn (\Exception $e) => self::handleException($e, $httpLog)
                 );
             };
         });
@@ -32,7 +32,7 @@ class LaravelSpy
 
     protected static function shouldLog(RequestInterface $request): bool
     {
-        return !Str::contains((string) $request->getUri(), config('spy.exclude_urls', []));
+        return ! Str::contains((string) $request->getUri(), config('spy.exclude_urls', []));
     }
 
     protected static function handleRequest(RequestInterface $request): ?HttpLog
@@ -40,7 +40,7 @@ class LaravelSpy
         $body = self::parseContent($request->getBody(), $request->getHeaderLine('Content-Type'));
 
         return HttpLog::create([
-            'url' => self::obfuscate((string) $request->getUri(), config('spy.obfuscates', [])),
+            'url' => urldecode(self::obfuscate($request->getUri(), config('spy.obfuscates', []))),
             'method' => $request->getMethod(),
             'request_headers' => self::obfuscate($request->getHeaders(), config('spy.obfuscates', [])),
             'request_body' => self::obfuscate($body, config('spy.obfuscates', [])),
@@ -65,7 +65,7 @@ class LaravelSpy
         if ($httpLog) {
             $httpLog->update([
                 'status' => 0,
-                'response_body' => self::parseContent($exception->getMessage(), 'text/plain'),
+                'response_body' => $exception->getMessage(),
             ]);
         }
 
@@ -94,6 +94,7 @@ class LaravelSpy
 
         if (str_contains($contentType, 'application/x-www-form-urlencoded')) {
             parse_str($content, $data);
+
             return $data;
         }
 
@@ -114,8 +115,8 @@ class LaravelSpy
             $data = str_replace($keys, $mask, $data);
         } elseif ($data instanceof \GuzzleHttp\Psr7\Uri) {
             parse_str($data->getQuery(), $query);
-            $query = urldecode(http_build_query(self::obfuscate($query, $keys, $mask)));
-            return str_replace($data->getQuery(), $query, (string) $data);
+
+            return $data->withQuery(http_build_query(self::obfuscate($query, $keys, $mask)));
         }
 
         return $data;
