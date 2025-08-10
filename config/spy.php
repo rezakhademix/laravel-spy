@@ -1,11 +1,33 @@
 <?php
 
 return [
-    'table_name' => 'http_logs',
-
+    /*
+    * Enable or disable the spy functionality.
+    */
     'enabled' => env('SPY_ENABLED', true),
-    'db_connection' => env('SPY_DB_CONNECTION'),
 
-    'exclude_urls' => explode(',', env('SPY_EXCLUDE_URLS', '')),
-    'obfuscates' => explode(',', env('SPY_OBFUSCATES', 'password')),
+    /*
+    * The database table name for storing HTTP logs.
+    */
+    'table_name' => env('SPY_TABLE_NAME', 'http_logs'),
+
+    /*
+    * The database connection to use.
+    */
+    'db_connection' => env('SPY_DB_CONNECTION', null),
+
+    /*
+    * URLs to exclude from logging, as a comma-separated list.
+    */
+    'exclude_urls' => array_filter(array_map('trim', explode(',', env('SPY_EXCLUDE_URLS', '')))),
+
+    /*
+    * Request fields to obfuscate in logs, as a comma-separated list.
+    */
+    'obfuscates' => array_filter(array_map('trim', explode(',', env('SPY_OBFUSCATES', 'password,token')))),
+
+    /*
+    * Number of days to retain logs before cleaning.
+    */
+    'clean_days' => (int) env('SPY_CLEAN_DAYS', 30),
 ];
