@@ -22,10 +22,10 @@ class HttpLog extends Model
     ];
 
     protected $casts = [
-        'request_headers' => 'array',
-        'request_body' => 'array',
-        'response_body' => 'array',
-        'response_headers' => 'array',
+        'request_headers' => 'json',
+        'request_body' => 'json',
+        'response_body' => 'json',
+        'response_headers' => 'json',
     ];
 
     public function __construct(array $attributes = [])

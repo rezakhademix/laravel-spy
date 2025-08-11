@@ -37,22 +37,23 @@ class LaravelSpy
 
     protected static function handleRequest(RequestInterface $request): ?HttpLog
     {
-        $body = self::parseContent($request->getBody(), $request->getHeaderLine('Content-Type'));
+        $requestBody = self::parseContent($request->getBody()->getContents(), $request->getHeaderLine('Content-Type'));
 
         return HttpLog::create([
             'url' => urldecode(self::obfuscate($request->getUri(), config('spy.obfuscates', []))),
             'method' => $request->getMethod(),
             'request_headers' => self::obfuscate($request->getHeaders(), config('spy.obfuscates', [])),
-            'request_body' => self::obfuscate($body, config('spy.obfuscates', [])),
+            'request_body' => self::obfuscate($requestBody, config('spy.obfuscates', [])),
         ]);
     }
 
     protected static function handleResponse(ResponseInterface $response, ?HttpLog $httpLog): ResponseInterface
     {
         if ($httpLog) {
+            $responseBody = self::parseContent($response->getBody(), $response->getHeaderLine('Content-Type'));
             $httpLog->update([
                 'status' => $response->getStatusCode(),
-                'response_body' => self::parseContent($response->getBody(), $response->getHeaderLine('Content-Type')),
+                'response_body' => $responseBody,
                 'response_headers' => $response->getHeaders(),
             ]);
         }
@@ -72,10 +73,8 @@ class LaravelSpy
         throw $exception;
     }
 
-    public static function parseContent($content, string $contentType): mixed
+    public static function parseContent($content, ?string $contentType): mixed
     {
-        $content = (string) $content;
-
         if (empty($content)) {
             return null;
         }
@@ -84,18 +83,27 @@ class LaravelSpy
             return json_decode($content, true);
         }
 
-        if (str_contains($contentType, 'text/xml')) {
+        if (str_contains($contentType, 'application/xml') || str_contains($contentType, 'text/xml')) {
             return json_decode(json_encode(simplexml_load_string($content)), true);
-        }
-
-        if (str_contains($contentType, 'text/plain')) {
-            return explode("\n", $content);
         }
 
         if (str_contains($contentType, 'application/x-www-form-urlencoded')) {
             parse_str($content, $data);
 
             return $data;
+        }
+
+        if (str_contains($contentType, 'multipart/form-data')) {
+            return base64_encode($content);
+        }
+
+        if (($contentType && (
+            str_contains($contentType, 'image/') ||
+            str_contains($contentType, 'video/') ||
+            str_contains($contentType, 'application/') ||
+            str_contains($contentType, 'audio/')
+        ))) {
+            return base64_encode($content);
         }
 
         return $content;
