@@ -43,7 +43,7 @@ php artisan vendor:publish --provider="Farayaz\LaravelSpy\LaravelSpyServiceProvi
 ```bash
 php artisan migrate
 ```
-This will create a `config/laravel-spy.php` file where you can configure the following options:
+This will create a `config/spy.php` file where you can configure the following options:
 
 ```
     'table_name' => 'http_logs',
