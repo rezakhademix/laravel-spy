@@ -113,10 +113,19 @@ class LaravelSpy
     {
         if (is_array($data)) {
             foreach ($data as $k => &$v) {
+                foreach ($keys as $key) {
+                    if (strcasecmp($k, $key) === 0) {
+                        if (is_array($v)) {
+                            foreach ($v as &$item) {
+                                $item = $mask;
+                            }
+                        } else {
+                            $v = $mask;
+                        }
+                    }
+                }
                 if (is_array($v)) {
                     $v = self::obfuscate($v, $keys, $mask);
-                } elseif (in_array($k, $keys, true)) {
-                    $v = $mask;
                 }
             }
         } elseif (is_string($data)) {
