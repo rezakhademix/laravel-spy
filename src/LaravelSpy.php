@@ -111,7 +111,7 @@ class LaravelSpy
 
     public static function obfuscate(mixed $data, array $keys, ?string $mask = null): mixed
     {
-        $mask ??= config('spy.obfuscation_mask', '🫣');
+        $mask ??= config('spy.obfuscation_mask') ?? '🫣';
 
         if (is_array($data)) {
             foreach ($data as $k => &$v) {
