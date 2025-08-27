@@ -40,10 +40,10 @@ class LaravelSpy
         $requestBody = self::parseContent($request->getBody()->getContents(), $request->getHeaderLine('Content-Type'));
 
         return HttpLog::create([
-            'url' => urldecode(self::obfuscate($request->getUri(), config('spy.obfuscates', []))),
+            'url' => urldecode(self::obfuscate($request->getUri())),
             'method' => $request->getMethod(),
-            'request_headers' => self::obfuscate($request->getHeaders(), config('spy.obfuscates', [])),
-            'request_body' => self::obfuscate($requestBody, config('spy.obfuscates', [])),
+            'request_headers' => self::obfuscate($request->getHeaders()),
+            'request_body' => self::obfuscate($requestBody),
         ]);
     }
 
@@ -53,8 +53,8 @@ class LaravelSpy
             $responseBody = self::parseContent($response->getBody(), $response->getHeaderLine('Content-Type'));
             $httpLog->update([
                 'status' => $response->getStatusCode(),
-                'response_body' => $responseBody,
-                'response_headers' => $response->getHeaders(),
+                'response_body' => self::obfuscate($responseBody),
+                'response_headers' => self::obfuscate($response->getHeaders()),
             ]);
         }
 
@@ -109,13 +109,14 @@ class LaravelSpy
         return $content;
     }
 
-    public static function obfuscate(mixed $data, array $keys, ?string $mask = null): mixed
+    public static function obfuscate(mixed $data): mixed
     {
-        $mask ??= config('spy.obfuscation_mask') ?? '🫣';
+        $mask = config('spy.obfuscation_mask');
+        $obfuscates = config('spy.obfuscates', []);
 
         if (is_array($data)) {
             foreach ($data as $k => &$v) {
-                foreach ($keys as $key) {
+                foreach ($obfuscates as $key) {
                     if (strcasecmp($k, $key) === 0) {
                         if (is_array($v)) {
                             foreach ($v as &$item) {
@@ -127,15 +128,15 @@ class LaravelSpy
                     }
                 }
                 if (is_array($v)) {
-                    $v = self::obfuscate($v, $keys, $mask);
+                    $v = self::obfuscate($v);
                 }
             }
         } elseif (is_string($data)) {
-            $data = str_replace($keys, $mask, $data);
+            $data = str_replace($obfuscates, $mask, $data);
         } elseif ($data instanceof \GuzzleHttp\Psr7\Uri) {
             parse_str($data->getQuery(), $query);
 
-            return $data->withQuery(http_build_query(self::obfuscate($query, $keys, $mask)));
+            return $data->withQuery(http_build_query(self::obfuscate($query)));
         }
 
         return $data;

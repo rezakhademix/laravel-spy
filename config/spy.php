@@ -29,7 +29,7 @@ return [
     /*
     * A mask string used to obfuscate fields in the logs.
     */
-    'obfuscation_mask' => env('SPY_OBFUSCATION_MASK'),
+    'obfuscation_mask' => env('SPY_OBFUSCATION_MASK', '🫣'),
 
     /*
     * Number of days to retain logs before cleaning.
