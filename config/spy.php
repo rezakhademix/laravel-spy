@@ -27,6 +27,11 @@ return [
     'obfuscates' => array_filter(array_map('trim', explode(',', env('SPY_OBFUSCATES', 'password,token')))),
 
     /*
+    * A mask string used to obfuscate fields in the logs.
+    */
+    'obfuscation_mask' => env('SPY_OBFUSCATION_MASK', '🫣'),
+
+    /*
     * Number of days to retain logs before cleaning.
     */
     'clean_days' => (int) env('SPY_CLEAN_DAYS', 30),
