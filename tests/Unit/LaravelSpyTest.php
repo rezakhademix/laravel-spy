@@ -11,23 +11,23 @@ class LaravelSpyTest extends TestCase
     /** @test */
     public function it_can_parse_json_content()
     {
-        $jsonContent = '{"name": "John", "age": 30}';
+        $jsonContent = '{"name": "Reza", "age": 30}';
         $contentType = 'application/json';
 
         $result = LaravelSpy::parseContent($jsonContent, $contentType);
 
-        $this->assertEquals(['name' => 'John', 'age' => 30], $result);
+        $this->assertEquals(['name' => 'Reza', 'age' => 30], $result);
     }
 
     /** @test */
     public function it_can_parse_xml_content()
     {
-        $xmlContent = '<?xml version="1.0"?><user><name>John</name><age>30</age></user>';
+        $xmlContent = '<?xml version="1.0"?><user><name>Mehrdad</name><age>30</age></user>';
         $contentType = 'application/xml';
 
         $result = LaravelSpy::parseContent($xmlContent, $contentType);
 
-        $this->assertEquals(['name' => 'John', 'age' => '30'], $result);
+        $this->assertEquals(['name' => 'Mehrdad', 'age' => '30'], $result);
     }
 
     /** @test */
@@ -96,7 +96,7 @@ class LaravelSpyTest extends TestCase
             'token' => 'abc123xyz'
         ];
 
-        $result = LaravelSpy::obfuscate($data, ['password', 'token']);
+        $result = LaravelSpy::obfuscate($data);
 
         $this->assertEquals([
             'username' => 'john_doe',
@@ -119,7 +119,7 @@ class LaravelSpyTest extends TestCase
             ]
         ];
 
-        $result = LaravelSpy::obfuscate($data, ['password', 'token']);
+        $result = LaravelSpy::obfuscate($data);
 
         $this->assertEquals([
             'user' => [
@@ -137,7 +137,7 @@ class LaravelSpyTest extends TestCase
     {
         $data = 'This contains a password and a token';
 
-        $result = LaravelSpy::obfuscate($data, ['password', 'token']);
+        $result = LaravelSpy::obfuscate($data);
 
         $this->assertEquals('This contains a 🫣 and a 🫣', $result);
     }
@@ -147,7 +147,7 @@ class LaravelSpyTest extends TestCase
     {
         $uri = new Uri('https://api.example.com/users?name=john&password=secret&token=abc123');
 
-        $result = LaravelSpy::obfuscate($uri, ['password', 'token']);
+        $result = LaravelSpy::obfuscate($uri);
 
         $this->assertInstanceOf(Uri::class, $result);
         $this->assertStringContainsString('password=%F0%9F%AB%A3', $result->getQuery());
@@ -159,8 +159,9 @@ class LaravelSpyTest extends TestCase
     public function it_can_use_custom_mask_for_obfuscation()
     {
         $data = ['password' => 'secret123'];
+        config()->set('spy.obfuscation_mask', '***');
 
-        $result = LaravelSpy::obfuscate($data, ['password'], '***');
+        $result = LaravelSpy::obfuscate($data);
 
         $this->assertEquals(['password' => '***'], $result);
     }
@@ -170,7 +171,7 @@ class LaravelSpyTest extends TestCase
     {
         $data = ['username' => 'john', 'email' => 'john@example.com'];
 
-        $result = LaravelSpy::obfuscate($data, ['password', 'token']);
+        $result = LaravelSpy::obfuscate($data);
 
         $this->assertEquals($data, $result);
     }
