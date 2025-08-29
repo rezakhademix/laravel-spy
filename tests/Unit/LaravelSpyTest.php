@@ -3,7 +3,6 @@
 namespace Tests\Unit;
 
 use Farayaz\LaravelSpy\LaravelSpy;
-use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Uri;
 use Tests\TestCase;
 

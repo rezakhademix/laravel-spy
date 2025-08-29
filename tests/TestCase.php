@@ -4,7 +4,6 @@ namespace Tests;
 
 use Farayaz\LaravelSpy\LaravelSpyServiceProvider;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\Schema;
 use Orchestra\Testbench\TestCase as OrchestraTestCase;
 
