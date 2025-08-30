@@ -14,7 +14,7 @@ class LaravelSpyTest extends TestCase
         $jsonContent = '{"name": "Reza", "age": 30}';
         $contentType = 'application/json';
 
-        $result = LaravelSpy::parseContent($jsonContent, $contentType);
+        $result = LaravelSpy::parseContent('request', $jsonContent, $contentType);
 
         $this->assertEquals(['name' => 'Reza', 'age' => 30], $result);
     }
@@ -25,7 +25,7 @@ class LaravelSpyTest extends TestCase
         $xmlContent = '<?xml version="1.0"?><user><name>Mehrdad</name><age>30</age></user>';
         $contentType = 'application/xml';
 
-        $result = LaravelSpy::parseContent($xmlContent, $contentType);
+        $result = LaravelSpy::parseContent('request', $xmlContent, $contentType);
 
         $this->assertEquals(['name' => 'Mehrdad', 'age' => '30'], $result);
     }
@@ -36,12 +36,12 @@ class LaravelSpyTest extends TestCase
         $formContent = 'name=John&age=30&email=john@example.com';
         $contentType = 'application/x-www-form-urlencoded';
 
-        $result = LaravelSpy::parseContent($formContent, $contentType);
+        $result = LaravelSpy::parseContent('request', $formContent, $contentType);
 
         $this->assertEquals([
             'name' => 'John',
             'age' => '30',
-            'email' => 'john@example.com'
+            'email' => 'john@example.com',
         ], $result);
     }
 
@@ -51,7 +51,7 @@ class LaravelSpyTest extends TestCase
         $content = 'binary-form-data-content';
         $contentType = 'multipart/form-data';
 
-        $result = LaravelSpy::parseContent($content, $contentType);
+        $result = LaravelSpy::parseContent('request', $content, $contentType);
 
         $this->assertEquals(base64_encode($content), $result);
     }
@@ -62,7 +62,7 @@ class LaravelSpyTest extends TestCase
         $content = 'binary-image-data';
         $contentType = 'image/jpeg';
 
-        $result = LaravelSpy::parseContent($content, $contentType);
+        $result = LaravelSpy::parseContent('request', $content, $contentType);
 
         $this->assertEquals(base64_encode($content), $result);
     }
@@ -73,7 +73,7 @@ class LaravelSpyTest extends TestCase
         $content = 'plain text content';
         $contentType = 'text/plain';
 
-        $result = LaravelSpy::parseContent($content, $contentType);
+        $result = LaravelSpy::parseContent('request', $content, $contentType);
 
         $this->assertEquals($content, $result);
     }
@@ -81,7 +81,7 @@ class LaravelSpyTest extends TestCase
     /** @test */
     public function it_returns_null_for_empty_content()
     {
-        $result = LaravelSpy::parseContent('', 'application/json');
+        $result = LaravelSpy::parseContent('request', '', 'application/json');
 
         $this->assertNull($result);
     }
@@ -93,7 +93,7 @@ class LaravelSpyTest extends TestCase
             'username' => 'john_doe',
             'password' => 'secret123',
             'email' => 'john@example.com',
-            'token' => 'abc123xyz'
+            'token' => 'abc123xyz',
         ];
 
         $result = LaravelSpy::obfuscate($data);
@@ -102,7 +102,7 @@ class LaravelSpyTest extends TestCase
             'username' => 'john_doe',
             'password' => '🫣',
             'email' => 'john@example.com',
-            'token' => '🫣'
+            'token' => '🫣',
         ], $result);
     }
 
@@ -114,9 +114,9 @@ class LaravelSpyTest extends TestCase
                 'name' => 'John',
                 'password' => 'secret123',
                 'profile' => [
-                    'token' => 'abc123'
-                ]
-            ]
+                    'token' => 'abc123',
+                ],
+            ],
         ];
 
         $result = LaravelSpy::obfuscate($data);
@@ -126,9 +126,9 @@ class LaravelSpyTest extends TestCase
                 'name' => 'John',
                 'password' => '🫣',
                 'profile' => [
-                    'token' => '🫣'
-                ]
-            ]
+                    'token' => '🫣',
+                ],
+            ],
         ], $result);
     }
 

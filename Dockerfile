@@ -9,9 +9,9 @@ RUN apt-get update && apt-get install -y \
     zip \
     unzip \
     sqlite3 \
-    libsqlite3-dev
-
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+    libsqlite3-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN docker-php-ext-install pdo_sqlite mbstring exif pcntl bcmath gd
 

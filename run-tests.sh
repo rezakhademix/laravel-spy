@@ -13,8 +13,18 @@ if ! docker info > /dev/null 2>&1; then
     exit 1
 fi
 
-echo "🏗  Building Docker image..."
-docker build -t laravel-spy-test .
+# Check if image exists and only rebuild if needed
+IMAGE_NAME="laravel-spy-test"
+if docker image inspect $IMAGE_NAME > /dev/null 2>&1; then
+    echo "📦 Using existing Docker image (use --rebuild to force rebuild)"
+    if [[ "$1" == "--rebuild" ]]; then
+        echo "🏗  Rebuilding Docker image..."
+        docker build --no-cache -t $IMAGE_NAME .
+    fi
+else
+    echo "🏗  Building Docker image (first time)..."
+    docker build -t $IMAGE_NAME .
+fi
 
 echo "📦 Installing dependencies..."
 docker run --rm \
@@ -22,7 +32,7 @@ docker run --rm \
     -w /var/www \
     -u $(id -u):$(id -g) \
     -e HOME=/tmp \
-    laravel-spy-test bash -c "
+    $IMAGE_NAME bash -c "
         git config --global --add safe.directory /var/www 2>/dev/null || true && \
         mkdir -p /tmp/composer-cache && \
         export COMPOSER_CACHE_DIR=/tmp/composer-cache && \
@@ -35,7 +45,7 @@ docker run --rm \
     -w /var/www \
     -u $(id -u):$(id -g) \
     -e HOME=/tmp \
-    laravel-spy-test bash -c "
+    $IMAGE_NAME bash -c "
         git config --global --add safe.directory /var/www 2>/dev/null || true && \
         vendor/bin/phpunit --display-deprecations
     "
