@@ -45,14 +45,43 @@ php artisan migrate
 ```
 This will create a `config/spy.php` file where you can configure the following options:
 
+### Basic Configuration
+
+Configure these via environment variables:
+```bash
+SPY_ENABLED=true
 ```
-    'table_name' => 'http_logs',
 
-    'enabled' => env('SPY_ENABLED', true),
-    'db_connection' => env('SPY_DB_CONNECTION'),
+### URL Exclusions
 
-    'exclude_urls' => explode(',', env('SPY_EXCLUDE_URLS', '')),
-    'obfuscates' => explode(',', env('SPY_OBFUSCATES', 'password')),
+Exclude specific URLs from being logged via environment variable:
+```bash
+SPY_EXCLUDE_URLS=api/health,ping,status
+```
+
+### Data Obfuscation
+
+Laravel Spy can obfuscate sensitive data in your logs. By default, it obfuscates `password` and `token` fields, but you can customize this via environment variables:
+
+```bash
+SPY_OBFUSCATES=password,token,api_key,secret
+SPY_OBFUSCATION_MASK=***HIDDEN***
+```
+
+### Excluding Content Types from Logging
+
+You can configure Laravel Spy to exclude specific content types from being logged for both request and response bodies. This is useful for binary data, images, videos, or other content you do not want included in logs.
+```bash
+SPY_REQUEST_BODY_EXCLUDE_CONTENT_TYPES=image/
+SPY_RESPONSE_BODY_EXCLUDE_CONTENT_TYPES=video/,application/pdf
+```
+
+### Automatic Log Retention
+
+Configure how long logs should be retained before automatic cleanup via environment variable:
+
+```bash
+SPY_CLEAN_DAYS=7  # Keep logs for 7 days (default is 30)
 ```
 
 ## Usage
@@ -66,14 +95,13 @@ Once installed and configured, Laravel Spy automatically tracks all outgoing HTT
 * Response HTTP Status code
 
 ## Example:
-Once you’ve installed `Laravel-Spy` via Composer and published the configuration, open your `web.php` file and add the following line to start logging results into the `http_logs` table in your database:
+After installing `laravel-spy` and publishing the configuration, any usage of Laravel's HTTP client (for example, in your controllers or jobs) will be automatically logged.
+
+Laravel Spy will log the details of this outgoing request to the `http_logs` table in your database.
 
 ```php
-Route::get("/spy", function () {
-    Http::get('https://github.com/farayaz/laravel-spy/');
-});
+Http::get('https://github.com/farayaz/laravel-spy/');
 ```
-Now head to the `http_logs` table to view the logged parameters.
 
 ## Cleaning up logs
 
